@@ -605,8 +605,9 @@ class X12Sheet(X12General):
                     raise Exception('cell name %r but row number is %r' % (cell_name, row_number))
             xf_index = int(cell_elem.get('s', '0'))
             cell_type = cell_elem.get('t', 'n')
+
             tvalue = None
-            formula = None
+            formula = ''
             if cell_type == 'n':
                 # n = number. Most frequent type.
                 # <v> child contains plain text which can go straight into float()
@@ -621,9 +622,9 @@ class X12Sheet(X12General):
                         raise Exception('unexpected tag %r' % child_tag)
                 if not tvalue:
                     if self.bk.formatting_info:
-                        self.sheet.put_cell(rowx, colx, XL_CELL_BLANK, '', xf_index)
+                        self.sheet.put_cell(rowx, colx, XL_CELL_BLANK, '', formula, xf_index)
                 else:
-                    self.sheet.put_cell(rowx, colx, None, float(tvalue), xf_index)
+                    self.sheet.put_cell(rowx, colx, None, float(tvalue), formula,  xf_index)
             elif cell_type == "s":
                 # s = index into shared string table. 2nd most frequent type
                 # <v> child contains plain text which can go straight into int()
@@ -639,10 +640,10 @@ class X12Sheet(X12General):
                 if not tvalue:
                     # <c r="A1" t="s"/>
                     if self.bk.formatting_info:
-                        self.sheet.put_cell(rowx, colx, XL_CELL_BLANK, '', xf_index)
+                        self.sheet.put_cell(rowx, colx, XL_CELL_BLANK, '', formula, xf_index)
                 else:
                     value = self.sst[int(tvalue)]
-                    self.sheet.put_cell(rowx, colx, XL_CELL_TEXT, value, xf_index)
+                    self.sheet.put_cell(rowx, colx, XL_CELL_TEXT, value, formula, xf_index)
             elif cell_type == "str":
                 # str = string result from formula.
                 # Should have <f> (formula) child; however in one file, all text cells are str with no formula.
@@ -657,7 +658,7 @@ class X12Sheet(X12General):
                         bad_child_tag(child_tag)
                 # assert tvalue is not None and formula is not None
                 # Yuk. Fails with file created by gnumeric -- no tvalue!
-                self.sheet.put_cell(rowx, colx, XL_CELL_TEXT, tvalue, xf_index)
+                self.sheet.put_cell(rowx, colx, XL_CELL_TEXT, tvalue, formula, xf_index)
             elif cell_type == "b":
                 # b = boolean
                 # <v> child contains "0" or "1"
@@ -671,7 +672,7 @@ class X12Sheet(X12General):
                         formula = cooked_text(self, child)
                     else:
                         bad_child_tag(child_tag)
-                self.sheet.put_cell(rowx, colx, XL_CELL_BOOLEAN, int(tvalue), xf_index)
+                self.sheet.put_cell(rowx, colx, XL_CELL_BOOLEAN, int(tvalue), formula, xf_index)
             elif cell_type == "e":
                 # e = error
                 # <v> child contains e.g. "#REF!"
@@ -684,7 +685,7 @@ class X12Sheet(X12General):
                     else:
                         bad_child_tag(child_tag)
                 value = error_code_from_text[tvalue]
-                self.sheet.put_cell(rowx, colx, XL_CELL_ERROR, value, xf_index)
+                self.sheet.put_cell(rowx, colx, XL_CELL_ERROR, value, formula, xf_index)
             elif cell_type == "inlineStr":
                 # Not expected in files produced by Excel.
                 # Only possible child is <is>.
@@ -697,9 +698,10 @@ class X12Sheet(X12General):
                     else:
                         bad_child_tag(child_tag)
                 assert tvalue is not None
-                self.sheet.put_cell(rowx, colx, XL_CELL_TEXT, tvalue, xf_index)
+                self.sheet.put_cell(rowx, colx, XL_CELL_TEXT, tvalue, formula, xf_index)
             else:
                 raise Exception("Unknown cell type %r in rowx=%d colx=%d" % (cell_type, rowx, colx))
+            # fprintf(self.logfile, "Formula %s: %s %s\n", cell_name, cell_type, formula)
 
     tag2meth = {
         'row':          do_row,
