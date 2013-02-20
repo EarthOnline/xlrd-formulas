@@ -9,7 +9,7 @@ setup(
     include_package_data=True,
     version=xlrd.__version__,
     description='xlrd but with formulas',
-    long_description=',
+    long_description='',
     author=xlrd.__author__,
     author_email='',
     url='',
